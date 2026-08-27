@@ -135,7 +135,7 @@ export async function processAssessment(formData: FormData): Promise<ActionResul
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
         
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pdfParse = require('pdf-parse/lib/pdf-parse');
+        const pdfParse = require('pdf-parse');
         const qpText = (await pdfParse(qpBuffer)).text;
         console.log(`[Groq] Question paper parsed: ${qpText.length} chars`);
         const asText = (await pdfParse(asBuffer)).text;

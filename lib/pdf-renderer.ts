@@ -1,9 +1,5 @@
 'use client'
 
-import * as pdfjsLib from 'pdfjs-dist'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
-
 /**
  * Renders each page of a PDF file to a blob URL image string.
  * This is the client-side Display Branch per ADR-01:
@@ -11,6 +7,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
  * so SVG bounding box overlays stay pixel-accurate.
  */
 export async function renderPdfToImages(file: File, scale = 2): Promise<string[]> {
+  // Dynamically import pdfjs-dist only when executing on the client
+  // Prevents Next.js SSR build crashes (ReferenceError: DOMMatrix is not defined)
+  const pdfjsLib = await import('pdfjs-dist')
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+  }
+
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const urls: string[] = []
