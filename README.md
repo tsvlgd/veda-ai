@@ -56,5 +56,5 @@ Relying on a single AI provider introduces a single point of failure. The extrac
 
 ## Documentation
 
-* `docs/ARCHITECTURE.md`: Core technical architecture and data flow.
-* `docs/DECISIONS.md`: Architectural Decision Records (ADRs).
+* `[docs/ARCHITECTURE.md`](https://github.com/tsvlgd/veda-ai-assessment-grading/tree/main/docs): Core technical architecture and data flow.
+* `[docs/DECISIONS.md](https://github.com/tsvlgd/veda-ai-assessment-grading/tree/main/docs)`: Architectural Decision Records (ADRs).
