@@ -5,25 +5,19 @@ import { Image as ImageIcon } from 'lucide-react'
 import type { ExtractionResult, BoundingBox } from '@/lib/schemas'
 
 interface DocumentWorkspaceProps {
-  answerSheetUrl: string
-  answerSheetType: string
+  renderedPages: string[]
   data: ExtractionResult
   selectedQuestionId: string | null
 }
 
-function isImageType(mimeType: string): boolean {
-  return mimeType.startsWith('image/')
-}
-
 export default function DocumentWorkspace({
-  answerSheetUrl,
-  answerSheetType,
+  renderedPages,
   data,
   selectedQuestionId,
 }: DocumentWorkspaceProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const totalPages = data.totalAnswerPages
-  const isImage = isImageType(answerSheetType)
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map())
+  const totalPages = renderedPages.length
 
   const activeCoordinates = useMemo(() => {
     if (!selectedQuestionId) return []
@@ -32,114 +26,98 @@ export default function DocumentWorkspace({
   }, [data.mappings, selectedQuestionId])
 
   useEffect(() => {
-    if (activeCoordinates.length === 0 || !containerRef.current) return
-
+    if (activeCoordinates.length === 0) return
     const first = activeCoordinates[0]
-    const container = containerRef.current
-    const innerHeight = container.scrollHeight
-
-    if (isImage) {
-      const scrollTarget = (first.ymin / 100) * innerHeight
-      container.scrollTo({ top: scrollTarget - 60, behavior: 'smooth' })
-    } else {
-      const pageOffset = ((first.page - 1) / totalPages) * innerHeight
-      const withinPage = (first.ymin / 100) * (innerHeight / totalPages)
-      container.scrollTo({ top: pageOffset + withinPage - 60, behavior: 'smooth' })
+    const pageEl = pageRefs.current.get(first.page)
+    if (pageEl) {
+      pageEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [activeCoordinates, isImage, totalPages])
+  }, [activeCoordinates])
 
-  function computeSvgRect(box: BoundingBox) {
-    if (isImage) {
-      return {
-        x: `${box.xmin}%`,
-        y: `${box.ymin}%`,
-        width: `${box.xmax - box.xmin}%`,
-        height: `${box.ymax - box.ymin}%`,
-      }
+  const coordsByPage = useMemo(() => {
+    const map = new Map<number, BoundingBox[]>()
+    for (const box of activeCoordinates) {
+      const arr = map.get(box.page) || []
+      arr.push(box)
+      map.set(box.page, arr)
     }
-    const pageHeight = 100 / totalPages
-    const yOffset = (box.page - 1) * pageHeight
-    return {
-      x: `${box.xmin}%`,
-      y: `${yOffset + (box.ymin / 100) * pageHeight}%`,
-      width: `${box.xmax - box.xmin}%`,
-      height: `${((box.ymax - box.ymin) / 100) * pageHeight}%`,
-    }
-  }
+    return map
+  }, [activeCoordinates])
 
-  const contentHeight = isImage ? 'auto' : `${totalPages * 100}%`
+  const activeLabel = useMemo(() => {
+    if (!selectedQuestionId) return ''
+    return data.questions.find((q) => q.id === selectedQuestionId)?.label ?? ''
+  }, [data.questions, selectedQuestionId])
 
   return (
-    <section className="flex min-h-[650px] flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-foreground px-4 py-3 text-background">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-foreground px-4 py-3 text-background">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <ImageIcon className="size-4" />
           Answer sheet
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="text-background/60">
-            {isImage ? '1 page' : `${totalPages} page${totalPages > 1 ? 's' : ''}`}
+            {totalPages} page{totalPages > 1 ? 's' : ''}
           </span>
         </div>
       </div>
-      <div ref={containerRef} className="relative flex-1 overflow-y-auto p-3">
-        <div className="relative w-full" style={{ height: contentHeight }}>
-          {isImage ? (
-            <img
-              src={answerSheetUrl}
-              alt="Answer sheet"
-              className="w-full"
-              draggable={false}
-            />
-          ) : (
-            <object
-              data={`${answerSheetUrl}#toolbar=0&navpanes=0`}
-              type="application/pdf"
-              className="pointer-events-none w-full"
-              style={{ height: `${totalPages * 100}%`, minHeight: `${totalPages * 800}px` }}
-            >
-              <p className="p-8 text-center text-sm text-muted-foreground">
-                PDF preview not available.{' '}
-                <a href={answerSheetUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                  Download the answer sheet
-                </a>
-              </p>
-            </object>
-          )}
-          <svg
-            className="pointer-events-none absolute left-0 top-0 h-full w-full"
-            preserveAspectRatio="none"
-          >
-            {activeCoordinates.map((box, i) => {
-              const rect = computeSvgRect(box)
-              return (
-                <g key={i}>
-                  <rect
-                    x={rect.x}
-                    y={rect.y}
-                    width={rect.width}
-                    height={rect.height}
-                    fill="rgba(251, 146, 60, 0.15)"
-                    stroke="rgb(249, 115, 22)"
-                    strokeWidth="2"
-                    rx="4"
-                  />
-                  <text
-                    x={rect.x}
-                    y={rect.y}
-                    dy="-6"
-                    fill="rgb(249, 115, 22)"
-                    fontSize="11"
-                    fontWeight="bold"
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-3">
+        <div className="flex flex-col gap-4">
+          {renderedPages.map((pageUrl, idx) => {
+            const pageNum = idx + 1
+            const boxes = coordsByPage.get(pageNum) || []
+            return (
+              <div
+                key={pageNum}
+                ref={(el) => {
+                  if (el) pageRefs.current.set(pageNum, el)
+                }}
+                className="relative w-full overflow-hidden rounded-lg border border-border shadow-sm"
+              >
+                <img
+                  src={pageUrl}
+                  alt={`Answer sheet page ${pageNum}`}
+                  className="block w-full"
+                  draggable={false}
+                />
+                {boxes.length > 0 && (
+                  <svg
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
                   >
-                    {selectedQuestionId
-                      ? data.questions.find((q) => q.id === selectedQuestionId)?.label ?? ''
-                      : ''}
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
+                    {boxes.map((box, i) => (
+                      <g key={i}>
+                        <rect
+                          x={box.xmin}
+                          y={box.ymin}
+                          width={box.xmax - box.xmin}
+                          height={box.ymax - box.ymin}
+                          fill="rgba(251, 146, 60, 0.18)"
+                          stroke="rgb(249, 115, 22)"
+                          strokeWidth="0.4"
+                          rx="0.3"
+                        />
+                        <text
+                          x={box.xmin}
+                          y={box.ymin - 0.5}
+                          fill="rgb(249, 115, 22)"
+                          fontSize="2.5"
+                          fontWeight="bold"
+                        >
+                          Q{activeLabel}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                )}
+                <div className="absolute bottom-2 right-2 rounded-md bg-foreground/80 px-2 py-0.5 text-[10px] font-bold text-background">
+                  Page {pageNum}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

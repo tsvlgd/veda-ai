@@ -90,24 +90,24 @@ export default function FileUploader({
   onStart,
 }: FileUploaderProps) {
   return (
-    <div className="flex min-h-[calc(100vh-72px)] items-center justify-center px-4 py-10">
+    <div className="flex h-[calc(100vh-72px)] items-center justify-center overflow-hidden px-4">
       <div className="w-full max-w-[850px] text-center">
-        <div className="mx-auto mb-6 grid size-20 place-items-center rounded-full border-[10px] border-orange-100 bg-orange-50 text-orange-500">
-          <Sparkles className="size-8" />
+        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full border-[6px] border-orange-100 bg-orange-50 text-orange-500">
+          <Sparkles className="size-6" />
         </div>
-        <p className="mb-3 text-sm font-medium uppercase tracking-[0.22em] text-muted-foreground">
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
           New grading workspace
         </p>
-        <h1 className="text-balance text-4xl font-bold tracking-tight md:text-6xl">
+        <h1 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
           Upload{' '}
           <span className="rounded-lg bg-orange-100 px-2 text-orange-600">question paper</span>
           <br className="hidden md:block" /> &amp; answer sheet
         </h1>
-        <p className="mt-4 text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           Upload both files to extract questions and map answers automatically.
         </p>
 
-        <div className="mt-10 flex flex-col gap-4 rounded-3xl bg-muted/70 p-4 md:flex-row md:p-5">
+        <div className="mt-6 flex flex-col gap-3 rounded-3xl bg-muted/70 p-3 md:flex-row md:p-4">
           <UploadCard
             type="Question Paper"
             file={questionPaper}
@@ -124,7 +124,7 @@ export default function FileUploader({
 
         <Button
           size="lg"
-          className="mt-7 rounded-full px-7"
+          className="mt-5 rounded-full px-7"
           disabled={!questionPaper || !answerSheet || isProcessing}
           onClick={onStart}
         >
@@ -139,7 +139,7 @@ export default function FileUploader({
             </>
           )}
         </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Your files stay private and are only used for this grading session.
         </p>
       </div>

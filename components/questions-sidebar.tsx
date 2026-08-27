@@ -129,7 +129,7 @@ export default function QuestionsSidebar({
   const unmatchedCount = data.mappings.filter((m) => m.questionId === null).length
 
   return (
-    <section className="flex min-h-[650px] flex-col overflow-hidden rounded-2xl border border-border bg-card">
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border p-4">
         <div>
           <h2 className="text-sm font-bold">Extracted questions</h2>

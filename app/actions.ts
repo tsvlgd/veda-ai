@@ -2,6 +2,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { ExtractionResultSchema, type ExtractionResult } from '@/lib/schemas'
+import Groq from 'groq-sdk'
 
 const EXTRACTION_PROMPT = `You are an expert assessment parser. You will receive two documents:
 1. QUESTION PAPER — containing printed exam questions
@@ -69,40 +70,97 @@ export async function processAssessment(formData: FormData): Promise<ActionResul
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
-
     const [qpBuffer, asBuffer] = await Promise.all([
       questionPaper.arrayBuffer().then((b) => Buffer.from(b)),
       answerSheet.arrayBuffer().then((b) => Buffer.from(b)),
     ])
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: EXTRACTION_PROMPT },
-            { text: '\n\nDOCUMENT 1 — QUESTION PAPER:' },
+    let rawText = '';
+    let apiSuccess = false;
+    let geminiError: any = null;
+
+    const geminiModels = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
+
+    for (const modelName of geminiModels) {
+      if (apiSuccess) break;
+      try {
+        console.log(`[Gemini] Trying ${modelName}...`);
+        const t0 = Date.now();
+        const genAI = new GoogleGenerativeAI(apiKey)
+        const model = genAI.getGenerativeModel({ model: modelName })
+
+        const result = await model.generateContent({
+          contents: [
             {
-              inlineData: {
-                mimeType: questionPaper.type || 'application/pdf',
-                data: qpBuffer.toString('base64'),
-              },
-            },
-            { text: '\n\nDOCUMENT 2 — STUDENT ANSWER SHEET:' },
-            {
-              inlineData: {
-                mimeType: answerSheet.type || 'application/pdf',
-                data: asBuffer.toString('base64'),
-              },
+              role: 'user',
+              parts: [
+                { text: EXTRACTION_PROMPT },
+                { text: '\n\nDOCUMENT 1 — QUESTION PAPER:' },
+                {
+                  inlineData: {
+                    mimeType: questionPaper.type || 'application/pdf',
+                    data: qpBuffer.toString('base64'),
+                  },
+                },
+                { text: '\n\nDOCUMENT 2 — STUDENT ANSWER SHEET:' },
+                {
+                  inlineData: {
+                    mimeType: answerSheet.type || 'application/pdf',
+                    data: asBuffer.toString('base64'),
+                  },
+                },
+              ],
             },
           ],
-        },
-      ],
-    })
+        }, { requestOptions: { timeout: 60000 } })
 
-    const rawText = result.response.text()
+        rawText = result.response.text()
+        apiSuccess = true;
+        console.log(`[Gemini] ${modelName} succeeded in ${Date.now() - t0}ms`);
+      } catch (err: any) {
+        console.error(`[Gemini] ${modelName} failed:`, err?.message || err);
+        geminiError = err;
+        const is503 = err?.status === 503 || String(err?.message).includes('503');
+        if (is503 && modelName === geminiModels[0]) {
+          console.log('[Gemini] 503 detected, retrying next model after 2s...');
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+    }
+
+    if (!apiSuccess && process.env.GROQ_API_KEY) {
+      try {
+        const t0 = Date.now();
+        console.log('[Groq] Falling back to Groq API...');
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+        
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require('pdf-parse/lib/pdf-parse');
+        const qpText = (await pdfParse(qpBuffer)).text;
+        console.log(`[Groq] Question paper parsed: ${qpText.length} chars`);
+        const asText = (await pdfParse(asBuffer)).text;
+        console.log(`[Groq] Answer sheet parsed: ${asText.length} chars`);
+        
+        const completion = await groq.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: EXTRACTION_PROMPT },
+            { role: 'user', content: `DOCUMENT 1 — QUESTION PAPER:\n${qpText}\n\nDOCUMENT 2 — STUDENT ANSWER SHEET:\n${asText}` }
+          ],
+          temperature: 0.1,
+        }, { timeout: 60000 })
+        
+        rawText = completion.choices[0]?.message?.content || '';
+        apiSuccess = true;
+        console.log(`[Groq] Succeeded in ${Date.now() - t0}ms, response length: ${rawText.length}`);
+      } catch (groqErr: any) {
+        console.error('[Groq] Failed:', groqErr?.message || groqErr);
+      }
+    }
+
+    if (!apiSuccess) {
+      return { success: false, error: geminiError instanceof Error ? geminiError.message : 'All API calls failed.' }
+    }
 
     const jsonMatch = rawText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {

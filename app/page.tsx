@@ -19,6 +19,7 @@ import {
 
 import { processAssessment } from '@/app/actions'
 import type { ExtractionResult } from '@/lib/schemas'
+import { renderPdfToImages } from '@/lib/pdf-renderer'
 import FileUploader from '@/components/file-uploader'
 import QuestionsSidebar from '@/components/questions-sidebar'
 import DocumentWorkspace from '@/components/document-workspace'
@@ -90,18 +91,28 @@ function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => 
 export default function Page() {
   const [questionPaper, setQuestionPaper] = useState<File | null>(null)
   const [answerSheet, setAnswerSheet] = useState<File | null>(null)
-  const [answerSheetUrl, setAnswerSheetUrl] = useState<string | null>(null)
+  const [renderedPages, setRenderedPages] = useState<string[]>([])
   const [extractedData, setExtractedData] = useState<ExtractionResult | null>(null)
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mobileMenu, setMobileMenu] = useState(false)
 
-  const handleAnswerSheetChange = useCallback((file: File | null) => {
+  const handleAnswerSheetChange = useCallback(async (file: File | null) => {
     setAnswerSheet(file)
-    if (answerSheetUrl) URL.revokeObjectURL(answerSheetUrl)
-    setAnswerSheetUrl(file ? URL.createObjectURL(file) : null)
-  }, [answerSheetUrl])
+    renderedPages.forEach((u) => URL.revokeObjectURL(u))
+    if (file) {
+      const isPdf = file.type === 'application/pdf'
+      if (isPdf) {
+        const pages = await renderPdfToImages(file)
+        setRenderedPages(pages)
+      } else {
+        setRenderedPages([URL.createObjectURL(file)])
+      }
+    } else {
+      setRenderedPages([])
+    }
+  }, [renderedPages])
 
   const handleStart = useCallback(async () => {
     if (!questionPaper || !answerSheet) return
@@ -128,17 +139,17 @@ export default function Page() {
   const handleReset = useCallback(() => {
     setQuestionPaper(null)
     setAnswerSheet(null)
-    if (answerSheetUrl) URL.revokeObjectURL(answerSheetUrl)
-    setAnswerSheetUrl(null)
+    renderedPages.forEach((u) => URL.revokeObjectURL(u))
+    setRenderedPages([])
     setExtractedData(null)
     setSelectedQuestionId(null)
     setError(null)
-  }, [answerSheetUrl])
+  }, [renderedPages])
 
   if (!extractedData) {
     return (
-      <div className="min-h-screen bg-muted/40">
-        <header className="flex h-[72px] items-center justify-between border-b border-border bg-card px-5 md:px-8">
+      <div className="h-screen overflow-hidden bg-muted/40">
+        <header className="flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-card px-5 md:px-8">
           <Logo />
           <div className="flex items-center gap-3 text-muted-foreground">
             <Search className="hidden size-5 md:block" />
@@ -172,11 +183,11 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/40">
-      <div className="flex min-h-screen">
+    <div className="h-screen overflow-hidden bg-muted/40">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar mobileOpen={mobileMenu} onClose={() => setMobileMenu(false)} />
-        <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border bg-card/95 px-4 backdrop-blur md:px-7">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-border bg-card/95 px-4 backdrop-blur md:px-7">
             <div className="flex items-center gap-3">
               <button
                 className="rounded-lg p-2 lg:hidden"
@@ -208,7 +219,7 @@ export default function Page() {
               <ChevronDown className="hidden size-4 md:block" />
             </div>
           </header>
-          <main className="p-4 md:p-6">
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6">
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
                 AI assessment
@@ -222,16 +233,15 @@ export default function Page() {
                 {extractedData.totalAnswerPages > 1 ? 's' : ''}
               </p>
             </div>
-            <div className="grid gap-4 xl:grid-cols-[minmax(330px,1fr)_minmax(480px,1.5fr)]">
+            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(330px,1fr)_minmax(480px,1.5fr)]">
               <QuestionsSidebar
                 data={extractedData}
                 selectedQuestionId={selectedQuestionId}
                 onSelectQuestion={setSelectedQuestionId}
               />
-              {answerSheetUrl && (
+              {renderedPages.length > 0 && (
                 <DocumentWorkspace
-                  answerSheetUrl={answerSheetUrl}
-                  answerSheetType={answerSheet?.type ?? 'application/pdf'}
+                  renderedPages={renderedPages}
                   data={extractedData}
                   selectedQuestionId={selectedQuestionId}
                 />
