@@ -18,7 +18,6 @@ import {
   X,
 } from 'lucide-react'
 
-import { processAssessment } from '@/app/actions'
 import type { ExtractionResult } from '@/lib/schemas'
 import { renderPdfToImages } from '@/lib/pdf-renderer'
 import FileUploader from '@/components/file-uploader'
@@ -125,7 +124,12 @@ export default function Page() {
       formData.append('questionPaper', questionPaper)
       formData.append('answerSheet', answerSheet)
 
-      const result = await processAssessment(formData)
+      const response = await fetch('/api/extract', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const result = await response.json()
 
       if (result.success) {
         setExtractedData(result.data)
