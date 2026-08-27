@@ -120,21 +120,27 @@ export default function Page() {
     setIsProcessing(true)
     setError(null)
 
-    const formData = new FormData()
-    formData.append('questionPaper', questionPaper)
-    formData.append('answerSheet', answerSheet)
+    try {
+      const formData = new FormData()
+      formData.append('questionPaper', questionPaper)
+      formData.append('answerSheet', answerSheet)
 
-    const result = await processAssessment(formData)
+      const result = await processAssessment(formData)
 
-    if (result.success) {
-      setExtractedData(result.data)
-      if (result.data.questions.length > 0) {
-        setSelectedQuestionId(result.data.questions[0].id)
+      if (result.success) {
+        setExtractedData(result.data)
+        if (result.data.questions.length > 0) {
+          setSelectedQuestionId(result.data.questions[0].id)
+        }
+      } else {
+        setError(result.error)
       }
-    } else {
-      setError(result.error)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Server connection failed. Please retry.'
+      setError(msg)
+    } finally {
+      setIsProcessing(false)
     }
-    setIsProcessing(false)
   }, [questionPaper, answerSheet])
 
   const handleReset = useCallback(() => {
