@@ -1,7 +1,5 @@
 'use server'
 
-export const maxDuration = 60 // Configure Vercel to allow up to 60 seconds execution time
-
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { ExtractionResultSchema, type ExtractionResult } from '@/lib/schemas'
 import Groq from 'groq-sdk'

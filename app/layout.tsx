@@ -1,5 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+
+export const maxDuration = 60 // Configure Vercel to allow up to 60 seconds execution time
 import './globals.css'
 
 export const metadata: Metadata = {
