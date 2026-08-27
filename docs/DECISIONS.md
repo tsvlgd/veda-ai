@@ -16,20 +16,12 @@ Each entry outlines the decision, the rationale, considered alternatives, and th
 
 ---
 
-## ADR-02: Server Actions Over API Routes
+## ADR-02: API Routes Over Server Actions
 
-**Decision:** Utilize Next.js Server Actions (`'use server'`) for the upload and extraction proxy layer rather than standard `/api/*` route handlers. A custom body size limit must be explicitly set.
+**Decision:** Utilize standard Next.js API Routes (`/api/extract`) for the upload and extraction layer rather than Next.js Server Actions (`'use server'`).
 
-**Rationale:** Both approaches successfully obfuscate the model API key on the server. Server Actions are invoked as a direct function call from a React component, which minimizes boilerplate (eliminating `fetch()` and manual JSON serialization) and aligns with the existing form submission architecture. 
-*Note on Limits:* Server Actions default to a 1MB request body limit. A multi page handwritten answer sheet PDF easily exceeds this constraint. The limit is explicitly overridden in the configuration:
-```js
-// next.config.mjs
-const nextConfig = {
-  experimental: {
-    serverActions: { bodySizeLimit: '15mb' },
-  },
-};
-```
+**Rationale:** Initially, Server Actions were selected to minimize boilerplate. However, during cloud deployments (specifically behind reverse proxies like Render or Docker containers), Next.js enforces highly aggressive, non-configurable Cross-Site Request Forgery (CSRF) protections on Server Actions. This mechanism compares the browser's `Origin` header with the internal proxy's `Host` / `X-Forwarded-Host` headers. If they mismatch (as they often do in containerized meshes), Next.js aborts the file upload with a strict `403 Forbidden` error, even if `allowedOrigins` or custom middleware are configured. 
+Migrating to a standard API Route entirely bypasses this rigid framework-level CSRF lock, guaranteeing successful multi-megabyte PDF uploads on any hosting platform without sacrificing the server-side obfuscation of AI API keys.
 
 ---
 

@@ -15,7 +15,7 @@ VedaAI is an automated grading and assessment extraction workspace. It processes
 
 * [x] Scaffold Next.js App Router architecture and Tailwind CSS configuration
 * [x] Build upload workspace for multi document ingestion (Question Paper and Answer Sheet)
-* [x] Implement Next.js Server Action (`/app/actions.ts`) to bypass client payload limits
+* [x] Implement Next.js API Route (`/api/extract`) to bypass container CSRF limits
 * [x] Integrate primary Gemini VLM extraction prompt logic
 * [x] Construct Zod schemas for strict JSON response parsing and type safety
 * [x] Develop resilient Groq fallback pipeline using `pdf-parse` for textual fallback

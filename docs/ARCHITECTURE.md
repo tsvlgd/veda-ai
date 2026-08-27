@@ -18,10 +18,10 @@ The following diagram illustrates the complete data flow from the client upload 
                │ (Stream raw files via Form Data)              │ (Intercept via client code)
                ▼                                               ▼
 ┌─────────────────────────────────────────────┐ ┌───────────────────────────────────────────────┐
-│ BACKEND PIPELINE (Next.js Server Action)    │ │ FRONTEND VIEW RENDERING LAYER                 │
-│    File: `app/actions.ts`                   │ │    File: `components/document-workspace.tsx`  │
+│ BACKEND PIPELINE (Next.js API Route)        │ │ FRONTEND VIEW RENDERING LAYER                 │
+│    File: `app/api/extract/route.ts`         │ │    File: `components/document-workspace.tsx`  │
 ├─────────────────────────────────────────────┤ ├───────────────────────────────────────────────┤
-│ [ADR-02: Server Actions over API Routes]    │ │ [ADR-01: Treat Display & AI Consumers Diff.]  │
+│ [ADR-02: API Routes over Server Actions]    │ │ [ADR-01: Treat Display & AI Consumers Diff.]  │
 │                                             │ │ [ADR-05: Ephemeral Memory - No Databases Used]│
 │                                             │ │                                               │
 │    Reads streamed multi part file bytes     │ │    Reads raw bytes of Answer Sheet PDF        │
@@ -87,11 +87,11 @@ The following diagram illustrates the complete data flow from the client upload 
 The teacher interacts with the DOM elements rendered inside `components/file-uploader.tsx`. Once the file payload triggers a submission event, two separate operations execute in parallel:
 
 *   **The Display Branch:** The raw answer document passes into `pdfjs-dist` on the client tier. It maps individual structural elements into standard, discrete pixel arrays, extracting raw images out of the layout wrapper [ADR-01]. The frontend converts these elements into memory resident string pointers using `URL.createObjectURL()`, setting up a clean image backplate for the application.
-*   **The Analytical Branch:** The React application packages files directly inside a standard web native `FormData` container object. It streams them into a Next.js Server Action (`app/actions.ts`), passing through a 15MB request framework limit [ADR-02].
+*   **The Analytical Branch:** The React application packages files directly inside a standard web native `FormData` container object. It streams them into a Next.js API Route (`app/api/extract/route.ts`), bypassing framework-level CSRF locks [ADR-02].
 
 ### 2. Phase 2: Backend AI Extraction Contract
 
-The Server Action acts as a thin proxy, passing the multi part file bytes across to Gemini 3.6 Flash. The AI reads the un-split document buffer natively.
+The API Route acts as a thin proxy, passing the multi part file bytes across to Gemini 3.6 Flash. The AI reads the un-split document buffer natively.
 
 We force the AI to return a raw text block matching our exact layout parameters. The text string from the model undergoes parsing via JavaScript's `JSON.parse()`, then feeds straight into the Zod validation checkpoint (`lib/schemas.ts` [ADR-04]).
 
