@@ -1,8 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { ChevronRight, FileText, Sparkles, Upload, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, FileText, Upload, X } from 'lucide-react'
 
 interface FileUploaderProps {
   questionPaper: File | null
@@ -11,6 +10,14 @@ interface FileUploaderProps {
   onQuestionPaperChange: (file: File | null) => void
   onAnswerSheetChange: (file: File | null) => void
   onStart: () => void
+}
+
+function PdfIcon() {
+  return (
+    <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-red-100">
+      <span className="text-[10px] font-black tracking-tight text-red-600">PDF</span>
+    </div>
+  )
 }
 
 function UploadCard({
@@ -27,7 +34,7 @@ function UploadCard({
   const ref = useRef<HTMLInputElement>(null)
 
   return (
-    <div className="flex min-h-[154px] flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background p-4 text-center">
+    <div className="flex min-h-[140px] flex-1 flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#e5e5e5] bg-white p-5 text-center shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] md:min-h-[160px]">
       <input
         ref={ref}
         type="file"
@@ -41,40 +48,37 @@ function UploadCard({
         }}
       />
       {file ? (
-        <div className="relative rounded-xl bg-muted px-5 py-3 text-left">
+        <div className="relative flex items-center gap-3 rounded-2xl bg-gray-100 px-5 py-3.5">
           <button
             onClick={() => onFile(null)}
             disabled={disabled}
-            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-foreground text-background"
+            className="absolute -right-2.5 -top-2.5 grid size-7 place-items-center rounded-full bg-[#555555] text-white shadow-sm transition hover:bg-[#333333]"
             aria-label={`Remove ${type}`}
           >
-            <X className="size-3" />
+            <X className="size-4" />
           </button>
-          <div className="flex items-center gap-3">
-            <div className="grid size-8 place-items-center rounded-lg bg-orange-100 text-orange-600">
-              <FileText className="size-4" />
-            </div>
-            <div>
-              <p className="max-w-[190px] truncate text-sm font-semibold">{file.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {file.type.includes('pdf') ? 'PDF' : 'Image'} &middot; Ready to analyze
-              </p>
-            </div>
+          <PdfIcon />
+          <div className="text-left">
+            <p className="max-w-[180px] truncate text-sm font-bold text-foreground">{file.name}</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              {(file.size / (1024 * 1024)).toFixed(0)}MB &middot;{' '}
+              {file.type.includes('pdf') ? 'PDF' : 'Image'}
+            </p>
           </div>
         </div>
       ) : (
         <button
-          className="flex flex-col items-center gap-3"
+          className="flex flex-col items-center gap-3 transition hover:opacity-80"
           onClick={() => ref.current?.click()}
           disabled={disabled}
         >
-          <div className="grid size-11 place-items-center rounded-xl bg-muted">
-            <Upload className="size-5" />
+          <div className="grid size-12 place-items-center rounded-2xl border border-gray-200 bg-gray-50 shadow-sm">
+            <Upload className="size-5 text-gray-500" />
           </div>
-          <span className="text-sm font-semibold">
+          <span className="text-sm font-bold text-foreground">
             Upload <span className="text-orange-600">{type}</span>
           </span>
-          <span className="text-xs text-muted-foreground">PDF or image &middot; Max 15MB</span>
+          <span className="text-xs font-medium text-muted-foreground">Max 10MB</span>
         </button>
       )}
     </div>
@@ -89,25 +93,33 @@ export default function FileUploader({
   onAnswerSheetChange,
   onStart,
 }: FileUploaderProps) {
+  const bothUploaded = !!questionPaper && !!answerSheet
+
   return (
-    <div className="flex h-[calc(100vh-72px)] items-center justify-center overflow-hidden px-4">
-      <div className="w-full max-w-[850px] text-center">
-        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full border-[6px] border-orange-100 bg-orange-50 text-orange-500">
-          <Sparkles className="size-6" />
-        </div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-          New grading workspace
-        </p>
-        <h1 className="text-balance text-3xl font-bold tracking-tight md:text-5xl">
+    <div className="flex-1 overflow-auto px-4 py-4 md:py-6">
+      <div className="mx-auto flex min-h-full w-full max-w-[850px] flex-col items-center justify-center text-center">
+        <h1 className="text-balance text-3xl font-bold tracking-tight md:text-[2.5rem] md:leading-tight">
           Upload{' '}
-          <span className="rounded-lg bg-orange-100 px-2 text-orange-600">question paper</span>
-          <br className="hidden md:block" /> &amp; answer sheet
+          <span className="rounded-lg bg-orange-100 px-2.5 py-0.5 text-orange-600">
+            Question Paper &amp; Answer Sheets
+          </span>
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload both files to extract questions and map answers automatically.
+          Upload both files to get started
         </p>
 
-        <div className="mt-6 flex flex-col gap-3 rounded-3xl bg-muted/70 p-3 md:flex-row md:p-4">
+        {/* Teacher illustration */}
+        <div className="mx-auto mt-4 mb-4 flex justify-center">
+          <img
+            src="/teacher-illustration.png"
+            alt="Teacher illustration"
+            className="h-[145px] w-auto object-contain mix-blend-multiply md:h-[250px]"
+            draggable={false}
+          />
+        </div>
+
+        {/* Upload boxes */}
+        <div className="mx-auto flex w-full max-w-[800px] flex-col gap-4 md:flex-row md:gap-6">
           <UploadCard
             type="Question Paper"
             file={questionPaper}
@@ -122,25 +134,18 @@ export default function FileUploader({
           />
         </div>
 
-        <Button
-          size="lg"
-          className="mt-5 rounded-full px-7"
-          disabled={!questionPaper || !answerSheet || isProcessing}
+        {/* Start Mapping button */}
+        <button
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#313131] px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#222222] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!bothUploaded || isProcessing}
           onClick={onStart}
         >
-          {isProcessing ? (
-            <>
-              <span className="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Analyzing with AI&hellip;
-            </>
-          ) : (
-            <>
-              Start grading <ChevronRight data-icon="inline-end" />
-            </>
-          )}
-        </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Your files stay private and are only used for this grading session.
+          Start Mapping
+          <ArrowRight className="size-4" />
+        </button>
+
+        <p className="mt-3 text-xs text-muted-foreground">
+          Once both files are uploaded, you&apos;ll able to map answers with questions
         </p>
       </div>
     </div>
