@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
-import { Image as ImageIcon } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import type { ExtractionResult, BoundingBox } from '@/lib/schemas'
 
 interface DocumentWorkspaceProps {
@@ -15,8 +15,9 @@ export default function DocumentWorkspace({
   data,
   selectedQuestionId,
 }: DocumentWorkspaceProps) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const [zoom, setZoom] = useState(100)
   const containerRef = useRef<HTMLDivElement>(null)
-  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const totalPages = renderedPages.length
 
   const activeCoordinates = useMemo(() => {
@@ -25,99 +26,133 @@ export default function DocumentWorkspace({
     return mapping?.coordinates ?? []
   }, [data.mappings, selectedQuestionId])
 
-  useEffect(() => {
-    if (activeCoordinates.length === 0) return
-    const first = activeCoordinates[0]
-    const pageEl = pageRefs.current.get(first.page)
-    if (pageEl) {
-      pageEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [activeCoordinates])
-
-  const coordsByPage = useMemo(() => {
-    const map = new Map<number, BoundingBox[]>()
-    for (const box of activeCoordinates) {
-      const arr = map.get(box.page) || []
-      arr.push(box)
-      map.set(box.page, arr)
-    }
-    return map
-  }, [activeCoordinates])
-
   const activeLabel = useMemo(() => {
     if (!selectedQuestionId) return ''
     return data.questions.find((q) => q.id === selectedQuestionId)?.label ?? ''
   }, [data.questions, selectedQuestionId])
 
+  // Navigate to the page of the selected question's answer
+  useEffect(() => {
+    if (activeCoordinates.length > 0) {
+      setCurrentPage(activeCoordinates[0].page)
+    }
+  }, [activeCoordinates])
+
+  const coordsForCurrentPage = useMemo(() => {
+    return activeCoordinates.filter((c) => c.page === currentPage)
+  }, [activeCoordinates, currentPage])
+
+  const handlePrev = () => setCurrentPage((p) => Math.max(1, p - 1))
+  const handleNext = () => setCurrentPage((p) => Math.min(totalPages, p + 1))
+  const handleZoomIn = () => setZoom((z) => Math.min(200, z + 25))
+  const handleZoomOut = () => setZoom((z) => Math.max(50, z - 25))
+
+  const pageUrl = renderedPages[currentPage - 1]
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-foreground px-4 py-3 text-background">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <ImageIcon className="size-4" />
-          Answer sheet
+      {/* Toolbar */}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-foreground/95 px-4 py-2.5 text-white">
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleZoomOut}
+            disabled={zoom <= 50}
+            className="grid size-7 place-items-center rounded-md transition hover:bg-white/10 disabled:opacity-40"
+            aria-label="Zoom out"
+          >
+            <Minus className="size-3.5" />
+          </button>
+          <span className="min-w-[48px] text-center text-xs font-semibold">{zoom}%</span>
+          <button
+            onClick={handleZoomIn}
+            disabled={zoom >= 200}
+            className="grid size-7 place-items-center rounded-md transition hover:bg-white/10 disabled:opacity-40"
+            aria-label="Zoom in"
+          >
+            <Plus className="size-3.5" />
+          </button>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-background/60">
-            {totalPages} page{totalPages > 1 ? 's' : ''}
+
+        {/* Page navigation */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrev}
+            disabled={currentPage <= 1}
+            className="grid size-7 place-items-center rounded-md transition hover:bg-white/10 disabled:opacity-40"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <span className="text-xs font-semibold">
+            Page {currentPage} of {totalPages}
           </span>
+          <button
+            onClick={handleNext}
+            disabled={currentPage >= totalPages}
+            className="grid size-7 place-items-center rounded-md transition hover:bg-white/10 disabled:opacity-40"
+            aria-label="Next page"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
       </div>
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-3">
-        <div className="flex flex-col gap-4">
-          {renderedPages.map((pageUrl, idx) => {
-            const pageNum = idx + 1
-            const boxes = coordsByPage.get(pageNum) || []
-            return (
-              <div
-                key={pageNum}
-                ref={(el) => {
-                  if (el) pageRefs.current.set(pageNum, el)
-                }}
-                className="relative w-full overflow-hidden rounded-lg border border-border shadow-sm"
-              >
-                <img
-                  src={pageUrl}
-                  alt={`Answer sheet page ${pageNum}`}
-                  className="block w-full"
-                  draggable={false}
-                />
-                {boxes.length > 0 && (
-                  <svg
-                    className="pointer-events-none absolute inset-0 h-full w-full"
-                    viewBox="0 0 100 100"
-                    preserveAspectRatio="none"
+
+      {/* Page viewer */}
+      <div ref={containerRef} className="custom-scrollbar flex-1 overflow-auto bg-muted/30 p-4">
+        <div
+          className="relative mx-auto overflow-hidden rounded-lg border border-border shadow-sm transition-transform origin-top"
+          style={{ width: `${zoom}%`, maxWidth: `${zoom}%` }}
+        >
+          {pageUrl && (
+            <img
+              src={pageUrl}
+              alt={`Answer sheet page ${currentPage}`}
+              className="block w-full"
+              draggable={false}
+            />
+          )}
+          {/* Green highlight boxes for matched answers */}
+          {coordsForCurrentPage.length > 0 && (
+            <svg
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {coordsForCurrentPage.map((box, i) => (
+                <g key={i}>
+                  <rect
+                    x={box.xmin}
+                    y={box.ymin}
+                    width={box.xmax - box.xmin}
+                    height={box.ymax - box.ymin}
+                    fill="rgba(34, 197, 94, 0.08)"
+                    stroke="rgb(34, 197, 94)"
+                    strokeWidth="0.5"
+                    rx="0.3"
+                  />
+                  {/* Green label badge */}
+                  <rect
+                    x={box.xmin}
+                    y={box.ymin - 3}
+                    width="8"
+                    height="3"
+                    fill="rgb(34, 197, 94)"
+                    rx="0.5"
+                  />
+                  <text
+                    x={box.xmin + 1}
+                    y={box.ymin - 0.8}
+                    fill="white"
+                    fontSize="2"
+                    fontWeight="bold"
                   >
-                    {boxes.map((box, i) => (
-                      <g key={i}>
-                        <rect
-                          x={box.xmin}
-                          y={box.ymin}
-                          width={box.xmax - box.xmin}
-                          height={box.ymax - box.ymin}
-                          fill="rgba(251, 146, 60, 0.18)"
-                          stroke="rgb(249, 115, 22)"
-                          strokeWidth="0.4"
-                          rx="0.3"
-                        />
-                        <text
-                          x={box.xmin}
-                          y={box.ymin - 0.5}
-                          fill="rgb(249, 115, 22)"
-                          fontSize="2.5"
-                          fontWeight="bold"
-                        >
-                          Q{activeLabel}
-                        </text>
-                      </g>
-                    ))}
-                  </svg>
-                )}
-                <div className="absolute bottom-2 right-2 rounded-md bg-foreground/80 px-2 py-0.5 text-[10px] font-bold text-background">
-                  Page {pageNum}
-                </div>
-              </div>
-            )
-          })}
+                    Q{activeLabel}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          )}
         </div>
       </div>
     </section>
