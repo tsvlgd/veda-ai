@@ -48,6 +48,11 @@ Relying on a single AI provider introduces a single point of failure. The extrac
 2. It routes the text to a high capacity LLaMA model on the Groq network.
 3. It maps the output back into the required Zod schema to prevent UI disruption.
 
+<p align="center">
+  <img src="https://github.com/tsvlgd/veda-ai/blob/main/asset/test-app.gif" alt="test-app" width="700">
+</p>
+
+
 ## Optimization and Tradeoffs for Vision LLMs
 
 **Optimization:** We feed raw PDF byte buffers directly into the Gemini model. Bypassing a traditional OCR pre processing step significantly reduces end to end latency and preserves complex spatial relationships (like handwritten diagrams or inline marginalia) that text only OCR destroys.
