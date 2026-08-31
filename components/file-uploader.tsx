@@ -34,7 +34,8 @@ function UploadCard({
   const ref = useRef<HTMLInputElement>(null)
 
   return (
-    <div className="flex min-h-[140px] flex-1 flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[#e5e5e5] bg-white p-5 text-center shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] md:min-h-[160px]">
+     <div className="relative flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-zinc-400 bg-white p-8 py-6 gap-4">
+
       <input
         ref={ref}
         type="file"
@@ -100,26 +101,27 @@ export default function FileUploader({
       <div className="mx-auto flex min-h-full w-full max-w-[850px] flex-col items-center justify-center text-center">
         <h1 className="text-balance text-3xl font-bold tracking-tight md:text-[2.5rem] md:leading-tight">
           Upload{' '}
-          <span className="rounded-lg bg-orange-100 px-2.5 py-0.5 text-orange-600">
+          <span className="rounded-lg bg-red-100 px-2.5 py-1.4 text-orange-600">
             Question Paper &amp; Answer Sheets
           </span>
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-lg text-foreground">
           Upload both files to get started
         </p>
 
         {/* Teacher illustration */}
-        <div className="mx-auto mt-4 mb-4 flex justify-center">
+        <div className="mx-auto mt-0 mb-0 flex justify-center">
           <img
             src="/teacher-illustration.png"
             alt="Teacher illustration"
-            className="h-[145px] w-auto object-contain mix-blend-multiply md:h-[250px]"
+            className="h-[160px] w-auto object-contain mix-blend-multiply md:h-[230px]"
             draggable={false}
           />
         </div>
 
         {/* Upload boxes */}
-        <div className="mx-auto flex w-full max-w-[800px] flex-col gap-4 md:flex-row md:gap-6">
+<div className="mx-auto flex w-full max-w-[800px] flex-col gap-2 rounded-3xl border border-zinc-200 bg-zinc-50 p-3 sm:flex-row sm:gap-6">
+
           <UploadCard
             type="Question Paper"
             file={questionPaper}
@@ -144,7 +146,7 @@ export default function FileUploader({
           <ArrowRight className="size-4" />
         </button>
 
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-6 text-xs text-muted-foreground">
           Once both files are uploaded, you&apos;ll able to map answers with questions
         </p>
       </div>
