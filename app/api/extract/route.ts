@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     let apiSuccess = false
     let geminiError: any = null
 
-    const geminiModels = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
+    const geminiModels = ['gemini-3.6-flash']
 
     for (const modelName of geminiModels) {
       if (apiSuccess) break

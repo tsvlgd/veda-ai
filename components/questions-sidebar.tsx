@@ -58,48 +58,43 @@ function QuestionCard({
   return (
     <button
       onClick={onClick}
-      className={`w-full rounded-xl border p-3.5 text-left transition-all ${
-        active
-          ? 'border-orange-300 bg-orange-50/70 shadow-sm'
-          : 'border-transparent bg-white hover:border-border hover:shadow-sm'
+      className={`w-full rounded-2xl md:rounded-3xl bg-white p-5 text-left shadow-sm transition-all border ${
+        active ? 'border-zinc-200' : 'border-transparent hover:border-zinc-200'
       }`}
     >
-      <div className="flex items-start gap-3">
-        <span
-          className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${
-            active
-              ? 'bg-orange-500 text-white'
-              : 'border border-border bg-muted text-foreground'
-          }`}
-        >
-          {question.label}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-[13px] font-medium leading-5 text-foreground">{question.text}</p>
-            <ScoreBadge mapping={mapping} />
+      <div className="flex flex-col">
+        {/* Top Row */}
+        <div className="flex items-center justify-between">
+          <span
+            className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${
+              active ? 'bg-zinc-800 text-white' : 'bg-zinc-600 text-white'
+            }`}
+          >
+            {question.label}
+          </span>
+          <div className="flex items-center gap-3">
+             <ScoreBadge mapping={mapping} />
+             <ChevronDown
+              className={`size-5 text-zinc-400 transition-transform ${active ? 'rotate-180' : ''}`}
+            />
           </div>
-          {active && mapping && (
-            <div className="mt-3">
-              <div className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-border/50">
-                <p className="mb-1.5 text-[11px] font-bold text-foreground">
-                  AI Feedback
-                </p>
-                <p className="text-xs leading-5 text-muted-foreground">{mapping.feedback}</p>
-              </div>
-            </div>
-          )}
-          {active && !mapping && (
-            <div className="mt-3 rounded-lg bg-muted/60 p-3">
-              <p className="text-xs text-muted-foreground">
-                No answer was found for this question on the answer sheet.
-              </p>
-            </div>
-          )}
         </div>
-        <ChevronDown
-          className={`mt-0.5 size-4 shrink-0 text-muted-foreground transition ${active ? 'rotate-180' : ''}`}
-        />
+        
+        {/* Card Body */}
+        <p className="mt-3 text-sm leading-relaxed text-zinc-800">{question.text}</p>
+        
+        {/* Expanded State */}
+        {active && mapping && (
+          <div className="mt-4 rounded-xl bg-zinc-50 p-4 text-left">
+            <p className="mb-1 text-sm font-semibold text-zinc-900">AI Feedback</p>
+            <p className="text-xs leading-relaxed text-zinc-600">{mapping.feedback}</p>
+          </div>
+        )}
+        {active && !mapping && (
+           <div className="mt-4 rounded-xl bg-zinc-50 p-4 text-left">
+             <p className="text-xs leading-relaxed text-zinc-600">No answer was found for this question on the answer sheet.</p>
+           </div>
+        )}
       </div>
     </button>
   )
@@ -111,17 +106,13 @@ export default function QuestionsSidebar({
   onSelectQuestion,
 }: QuestionsSidebarProps) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
-        <h2 className="text-sm font-bold text-foreground">
-          Extracted Questions{' '}
-          <span className="font-normal text-muted-foreground">(from question paper)</span>
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent">
+      <div className="flex items-center justify-between px-2 pt-2">
+        <h2 className="mb-4 mt-6 text-sm font-bold text-zinc-800">
+          Extracted Questions <span className="font-normal">(from question paper)</span>
         </h2>
-        <button className="text-xs font-medium text-muted-foreground hover:text-foreground transition">
-          Expand All
-        </button>
       </div>
-      <div className="custom-scrollbar flex flex-1 flex-col gap-1.5 overflow-y-auto p-3">
+      <div className="custom-scrollbar flex flex-1 flex-col space-y-4 overflow-y-auto px-1 pb-4">
         {data.questions.map((q, i) => (
           <QuestionCard
             key={q.id}

@@ -9,15 +9,15 @@ import {
   ChevronRight,
   ChevronsRight,
   ClipboardList,
-  Clock,
   FileText,
-  Grid2X2,
   HelpCircle,
   LayoutDashboard,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   Sparkles,
-  Star,
+  Users,
   X,
 } from 'lucide-react'
 
@@ -45,10 +45,10 @@ function Logo({ compact = false }: { compact?: boolean }) {
 /* ─── Sidebar ─── */
 const NAV_ITEMS = [
   { label: 'Home', icon: LayoutDashboard },
-  { label: 'My Classroom', icon: Grid2X2 },
-  { label: 'Assignments', icon: ClipboardList },
-  { label: 'Exams', icon: BookOpen },
-  { label: 'My Library', icon: Clock },
+  { label: 'My Classroom', icon: Users },
+  { label: 'Assignments', icon: FileText },
+  { label: 'Exams', icon: ClipboardList },
+  { label: 'My Library', icon: BookOpen },
 ] as const
 
 function Sidebar({
@@ -74,31 +74,55 @@ function Sidebar({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex ${w} flex-col border-r border-border bg-card transition-all duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex ${w} shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] transition-all duration-200 lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} p-4`}>
+        <div className={`flex items-center ${collapsed ? 'flex-col gap-3 pt-5' : 'justify-between p-4'}`}>
           <Logo compact={collapsed} />
           {!collapsed && (
+            <div className="flex items-center gap-1">
+              {/* Collapse toggle (desktop only) */}
+              <button
+                onClick={onToggleCollapse}
+                className="hidden items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:bg-muted lg:flex transition"
+                aria-label="Collapse sidebar"
+              >
+                <PanelLeftClose className="size-5" />
+              </button>
+              {/* Close toggle (mobile only) */}
+              <button
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted lg:hidden"
+                onClick={onClose}
+                aria-label="Close menu"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+          )}
+          {collapsed && (
             <button
-              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted lg:hidden"
-              onClick={onClose}
-              aria-label="Close menu"
-            >
-              <X className="size-4" />
+               onClick={onToggleCollapse}
+               className="hidden items-center justify-center rounded-lg p-1.5 text-muted-foreground hover:bg-muted lg:flex transition"
+               aria-label="Expand sidebar"
+             >
+               <PanelLeftOpen className="size-5" />
             </button>
           )}
         </div>
 
         {/* AI Teacher's Toolkit */}
-        <div className={`mx-3 rounded-2xl bg-foreground ${collapsed ? 'p-2' : 'p-3'} text-background`}>
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2'} font-semibold`}>
-            <Sparkles className="size-4 shrink-0 text-orange-400" />
-            {!collapsed && <span className="text-sm">AI Teacher&apos;s Toolkit</span>}
+        {collapsed ? (
+          <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-foreground shadow-[0_0_0_3px_rgba(251,146,60,0.3)]">
+            <Sparkles className="size-4 text-orange-400" />
           </div>
-        </div>
+        ) : (
+          <div className="mx-3 flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-background shadow-[0_0_0_3px_rgba(251,146,60,0.3)]">
+            <Sparkles className="size-4 shrink-0 text-orange-400" />
+            <span className="text-sm font-semibold">AI Teacher&apos;s Toolkit</span>
+          </div>
+        )}
 
         {/* Nav */}
         <nav className="mt-6 flex flex-col gap-0.5 px-2 text-sm">
@@ -146,15 +170,6 @@ function Sidebar({
               </>
             )}
           </div>
-
-          {/* Collapse toggle (desktop only) */}
-          <button
-            onClick={onToggleCollapse}
-            className="hidden items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted lg:flex"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <ChevronsRight className={`size-4 transition ${collapsed ? '' : 'rotate-180'}`} />
-          </button>
         </div>
       </aside>
     </>
@@ -172,48 +187,67 @@ function Navbar({
   showBackButton: boolean
 }) {
   return (
-    <header className="sticky top-0 z-20 flex h-[60px] shrink-0 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+    <header className="flex h-[60px] shrink-0 items-center justify-between rounded-2xl bg-white px-4 shadow-[0_2px_12px_rgba(0,0,0,0.07)] md:px-5">
+
+      {/* ── LEFT ── */}
       <div className="flex items-center gap-3">
-        {/* Mobile hamburger */}
-        <button
-          className="rounded-lg p-2 text-muted-foreground lg:hidden"
-          onClick={onMenuClick}
-          aria-label="Open menu"
-        >
-          <Menu className="size-5" />
-        </button>
+        {/* Mobile: optional back arrow */}
         {showBackButton && (
-          <button onClick={onReset} className="text-muted-foreground hover:text-foreground transition">
+          <button onClick={onReset} className="rounded-lg p-1 text-muted-foreground hover:bg-muted transition lg:hidden">
             <ChevronLeft className="size-5" />
           </button>
         )}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="size-4" />
-          <span className="font-medium">Exams</span>
+        {/* Mobile: VedaAI brand */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <div className="grid size-8 place-items-center rounded-xl bg-slate-900">
+            <span className="text-sm font-black text-white">V</span>
+          </div>
+          <span className="text-base font-bold tracking-tight text-slate-900">VedaAI</span>
+        </div>
+        {/* Desktop: back arrow + Exams breadcrumb */}
+        <div className="hidden items-center gap-2 lg:flex">
+          {showBackButton && (
+            <button onClick={onReset} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition">
+              <ChevronLeft className="size-4" />
+            </button>
+          )}
+          <div className="flex items-center gap-2 text-sm">
+            <ClipboardList className="size-4 text-muted-foreground" />
+            <span className="font-medium text-foreground">Exams</span>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 md:gap-3">
-        <button className="hidden rounded-full p-2 text-muted-foreground hover:bg-muted md:grid" aria-label="Help">
+
+      {/* ── RIGHT ── */}
+      <div className="flex items-center gap-3">
+        {/* Desktop-only icons */}
+        <button className="hidden rounded-full p-2 text-muted-foreground hover:bg-muted lg:grid" aria-label="Help">
           <HelpCircle className="size-5" />
         </button>
-        <button className="relative rounded-full p-2 text-muted-foreground hover:bg-muted" aria-label="Notifications">
+        {/* Bell — always visible */}
+        <button className="relative text-muted-foreground hover:text-slate-900 transition" aria-label="Notifications">
           <Bell className="size-5" />
-          <span className="absolute right-2 top-1.5 size-2 rounded-full bg-orange-500" />
+          <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-orange-500" />
         </button>
-        <button className="hidden rounded-full p-2 text-muted-foreground hover:bg-muted md:grid" aria-label="Starred">
-          <Star className="size-5" />
+        <button className="hidden rounded-full p-2 text-muted-foreground hover:bg-muted lg:grid" aria-label="AI Sparkle">
+          <Sparkles className="size-5" />
         </button>
+        {/* Avatar */}
         <div className="flex items-center gap-2">
-          <div className="grid size-8 place-items-center rounded-full bg-foreground">
-            <img
-              src="/placeholder-user.jpg"
-              alt="User avatar"
-              className="size-8 rounded-full object-cover"
-            />
+          <div className="grid size-8 place-items-center overflow-hidden rounded-full bg-slate-200">
+            <img src="/placeholder-user.jpg" alt="User avatar" className="size-full object-cover" />
           </div>
-          <span className="hidden text-sm font-semibold md:block">Madhur Rastogi</span>
-          <ChevronDown className="hidden size-4 text-muted-foreground md:block" />
+          <span className="hidden text-sm font-semibold lg:block">Madhur Rastogi</span>
+          <ChevronDown className="hidden size-4 text-muted-foreground lg:block" />
         </div>
+        {/* Mobile-only: hamburger on the RIGHT */}
+        <button
+          className="text-muted-foreground hover:text-slate-900 transition lg:hidden"
+          onClick={onMenuClick}
+          aria-label="Open menu"
+        >
+          <Menu className="size-6" />
+        </button>
       </div>
     </header>
   )
@@ -228,23 +262,23 @@ function MobileTabNav({
   onTabChange: (tab: 'questions' | 'answers') => void
 }) {
   return (
-    <div className="flex gap-1 rounded-full bg-muted p-1 lg:hidden">
+    <div className="flex gap-1 rounded-full bg-zinc-100 p-1 shadow-inner">
       <button
         onClick={() => onTabChange('questions')}
-        className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`flex-1 rounded-full px-5 py-2 text-sm font-semibold transition ${
           activeTab === 'questions'
-            ? 'bg-foreground text-white shadow-sm'
-            : 'text-muted-foreground'
+            ? 'bg-zinc-900 text-white shadow-md'
+            : 'text-zinc-500 hover:text-zinc-700'
         }`}
       >
         Questions
       </button>
       <button
         onClick={() => onTabChange('answers')}
-        className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`flex-1 rounded-full px-5 py-2 text-sm font-semibold transition ${
           activeTab === 'answers'
-            ? 'bg-foreground text-white shadow-sm'
-            : 'text-muted-foreground'
+            ? 'bg-zinc-900 text-white shadow-md'
+            : 'text-zinc-500 hover:text-zinc-700'
         }`}
       >
         Answer Sheet
@@ -335,7 +369,7 @@ export default function Page() {
   }, [renderedPages])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen gap-3 overflow-hidden bg-[#f4f4f5] px-4 py-3">
       {/* Sidebar — always present */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -345,7 +379,7 @@ export default function Page() {
       />
 
       {/* Main area */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden">
         <Navbar
           onMenuClick={() => setMobileMenu(true)}
           onReset={handleReset}
@@ -353,7 +387,7 @@ export default function Page() {
         />
 
         {/* Content area */}
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/40">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#F2F2F2]">
           {/* Upload State */}
           {appState === 'upload' && (
             <>
@@ -384,13 +418,15 @@ export default function Page() {
 
           {/* Results State */}
           {appState === 'results' && extractedData && (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3 md:p-4">
-              {/* Mobile tab nav */}
-              <MobileTabNav activeTab={mobileTab} onTabChange={setMobileTab} />
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3">
+              {/* Mobile tab nav — hidden on desktop */}
+              <div className="lg:hidden">
+                <MobileTabNav activeTab={mobileTab} onTabChange={setMobileTab} />
+              </div>
 
               {/* Desktop: side-by-side. Mobile: tab-switched */}
-              <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[minmax(330px,1fr)_minmax(480px,1.5fr)]">
-                {/* Questions panel — always visible on desktop, tab-switched on mobile */}
+              <div className="grid min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[minmax(330px,1fr)_minmax(480px,1.5fr)]">
+                {/* Questions panel */}
                 <div className={`min-h-0 overflow-hidden ${mobileTab === 'answers' ? 'hidden lg:flex' : 'flex'}`}>
                   <QuestionsSidebar
                     data={extractedData}
